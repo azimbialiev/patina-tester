@@ -15,12 +15,12 @@ fn main() {
         let pub_handle = thread::spawn(move || {
             spawn_publishers()
         });
-        let subs_handle1 = thread::spawn(move || {
-            spawn_subscribers()
-        });
-        let pub_handle2 = thread::spawn(move || {
-            spawn_publishers()
-        });
+        // let subs_handle1 = thread::spawn(move || {
+        //     spawn_subscribers()
+        // });
+        // let pub_handle2 = thread::spawn(move || {
+        //     spawn_publishers()
+        // });
         thread::sleep(Duration::from_secs(3));
     }
 
@@ -37,18 +37,17 @@ fn main() {
 #[tokio::main(flavor = "current_thread")]
 async fn spawn_subscribers() {
     let mut handles = vec![];
-    for i in 0..100 {
+    for i in 0..5 {
         let handle = tokio::spawn(async move {
             println!("Spawning subscriber {}", i);
             let cli = create_client();
             let rx = cli.start_consuming();
             cli.subscribe("test", 2).expect("panic subscribe");
             for msg in rx {
-                sleep(Duration::from_millis(25)).await;
             }
         });
         handles.push(handle);
-        //sleep(Duration::from_millis(500)).await;
+        sleep(Duration::from_millis(250)).await;
     }
     for handle in handles {
         println!("Subscriber handle done");
@@ -60,17 +59,17 @@ async fn spawn_subscribers() {
 #[tokio::main(flavor = "current_thread")]
 async fn spawn_publishers() {
     let mut handles = vec![];
-    for i in 0..100 {
+    for i in 0..2 {
         let handle = tokio::spawn(async move {
             println!("Spawning publisher {}", i);
             let cli = create_client();
-            for i in 0..100000 {
+            for i in 0..100 {
                 let msg = mqtt::Message::new("test", "Hello world!", 2);
                 cli.publish(msg).expect("panic publish");
             }
         });
         handles.push(handle);
-        //sleep(Duration::from_millis(500)).await;
+        sleep(Duration::from_millis(500)).await;
     }
     for handle in handles {
         handle.await.expect("panic in process");
