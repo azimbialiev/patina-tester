@@ -15,13 +15,13 @@ fn main() {
         let pub_handle = thread::spawn(move || {
             spawn_publishers()
         });
-        thread::sleep(Duration::from_secs(1));
+        thread::sleep(Duration::from_secs(5));
     }
 
 }
 
-//#[tokio::main(flavor = "multi_thread", worker_threads = 2)]
-#[tokio::main(flavor = "current_thread")]
+#[tokio::main(flavor = "multi_thread", worker_threads = 1)]
+//#[tokio::main(flavor = "current_thread")]
 async fn spawn_subscribers() {
     let mut handles = vec![];
     for i in 0..5 {
@@ -41,8 +41,8 @@ async fn spawn_subscribers() {
     }
 }
 
-//#[tokio::main(flavor = "multi_thread", worker_threads = 2)]
-#[tokio::main(flavor = "current_thread")]
+#[tokio::main(flavor = "multi_thread", worker_threads = 1)]
+//#[tokio::main(flavor = "current_thread")]
 async fn spawn_publishers() {
     let mut handles = vec![];
     for i in 0..2 {
@@ -54,6 +54,7 @@ async fn spawn_publishers() {
                 let msg = mqtt::Message::new("test", "Hello world!", 2);
                 cli.publish(msg).expect("panic publish");
             }
+            cli.disconnect(disconnect_opts()).expect("panic disconnect");
             println!("Sent {} packets in {} ms", msg_count, now.elapsed().as_millis())
         });
         handles.push(handle);
@@ -95,12 +96,13 @@ fn create_client() -> Client {
         println!("Error creating the client: {:?}", err);
         process::exit(1);
     });
-
+    let now = Instant::now();
     // Connect and wait for it to complete or fail
     if let Err(e) = cli.connect(connect_opts()) {
         println!("Unable to connect:\n\t{:?}", e);
         process::exit(1);
     }
+    println!("Connect took {}ms", now.elapsed().as_millis());
     cli
 }
 
