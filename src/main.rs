@@ -1,7 +1,7 @@
 extern crate core;
 
 use std::{process, thread};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use paho_mqtt as mqtt;
 use paho_mqtt::Error::ReasonCode;
 use paho_mqtt::{Client, ConnectOptions, CreateOptions, DisconnectOptions, PersistenceType};
@@ -15,22 +15,9 @@ fn main() {
         let pub_handle = thread::spawn(move || {
             spawn_publishers()
         });
-        // let subs_handle1 = thread::spawn(move || {
-        //     spawn_subscribers()
-        // });
-        // let pub_handle2 = thread::spawn(move || {
-        //     spawn_publishers()
-        // });
-        thread::sleep(Duration::from_secs(3));
+        thread::sleep(Duration::from_secs(1));
     }
 
-
-
-    // subs_handle.join().expect("panic in process");
-    // pub_handle.join().expect("panic in process");
-    // subs_handle1.join().expect("panic in process");
-    // pub_handle2.join().expect("panic in process");
-    // println!("Test done");
 }
 
 //#[tokio::main(flavor = "multi_thread", worker_threads = 2)]
@@ -39,7 +26,6 @@ async fn spawn_subscribers() {
     let mut handles = vec![];
     for i in 0..5 {
         let handle = tokio::spawn(async move {
-            println!("Spawning subscriber {}", i);
             let cli = create_client();
             let rx = cli.start_consuming();
             cli.subscribe("test", 2).expect("panic subscribe");
@@ -61,12 +47,14 @@ async fn spawn_publishers() {
     let mut handles = vec![];
     for i in 0..2 {
         let handle = tokio::spawn(async move {
-            println!("Spawning publisher {}", i);
             let cli = create_client();
-            for i in 0..100 {
+            let now = Instant::now();
+            let msg_count = 100;
+            for i in 0..msg_count {
                 let msg = mqtt::Message::new("test", "Hello world!", 2);
                 cli.publish(msg).expect("panic publish");
             }
+            println!("Sent {} packets in {} ms", msg_count, now.elapsed().as_millis())
         });
         handles.push(handle);
         sleep(Duration::from_millis(500)).await;
